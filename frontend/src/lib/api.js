@@ -132,6 +132,7 @@ export const habitsApi = {
       category: data.category,
       streak: 0,
       completions: [],
+      notes: {}, // { "2026-01-04": "Notiz für diesen Tag" }
       created_at: new Date().toISOString(),
     };
     habits.push(newHabit);
@@ -139,7 +140,7 @@ export const habitsApi = {
     return { data: newHabit };
   },
 
-  complete: async (id, date) => {
+  complete: async (id, date, note = null) => {
     const habits = JSON.parse(localStorage.getItem(STORAGE_KEYS.HABITS) || '[]');
     const index = habits.findIndex(h => h.id === id);
     if (index === -1) throw new Error('Habit not found');
@@ -150,8 +151,17 @@ export const habitsApi = {
     // Toggle completion
     if (habit.completions.includes(dateStr)) {
       habit.completions = habit.completions.filter(d => d !== dateStr);
+      // Remove note when uncompleting
+      if (habit.notes) {
+        delete habit.notes[dateStr];
+      }
     } else {
       habit.completions.push(dateStr);
+      // Add note if provided
+      if (note !== null) {
+        habit.notes = habit.notes || {};
+        habit.notes[dateStr] = note;
+      }
     }
     
     // Calculate streak
@@ -172,6 +182,25 @@ export const habitsApi = {
     }
     
     habit.streak = streak;
+    localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
+    return { data: habit };
+  },
+
+  // Update note for a specific date
+  updateNote: async (id, date, note) => {
+    const habits = JSON.parse(localStorage.getItem(STORAGE_KEYS.HABITS) || '[]');
+    const index = habits.findIndex(h => h.id === id);
+    if (index === -1) throw new Error('Habit not found');
+    
+    const habit = habits[index];
+    habit.notes = habit.notes || {};
+    
+    if (note && note.trim()) {
+      habit.notes[date] = note.trim();
+    } else {
+      delete habit.notes[date];
+    }
+    
     localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
     return { data: habit };
   },
