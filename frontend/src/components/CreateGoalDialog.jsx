@@ -20,7 +20,7 @@ const CreateGoalDialog = ({ open, onOpenChange, onSuccess }) => {
     target_value: '',
     start_value: '',
     starting_situation: '',
-    deadline: null,
+    deadline: '',
   });
 
   const handleSubmit = async (e) => {
@@ -40,7 +40,7 @@ const CreateGoalDialog = ({ open, onOpenChange, onSuccess }) => {
         target_value: formData.goal_type === 'numeric' ? parseInt(formData.target_value) || null : null,
         start_value: formData.goal_type === 'numeric' ? parseInt(formData.start_value) || 0 : 0,
         starting_situation: formData.starting_situation || null,
-        deadline: formData.deadline ? formData.deadline.toISOString() : null,
+        deadline: formData.deadline || null,
       });
       toast.success('Ziel erstellt!');
       onOpenChange(false);
@@ -52,7 +52,7 @@ const CreateGoalDialog = ({ open, onOpenChange, onSuccess }) => {
         target_value: '',
         start_value: '',
         starting_situation: '',
-        deadline: null,
+        deadline: '',
       });
       onSuccess();
     } catch (error) {
