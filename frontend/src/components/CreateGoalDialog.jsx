@@ -146,19 +146,46 @@ const CreateGoalDialog = ({ open, onOpenChange, onSuccess }) => {
           </div>
 
           {formData.goal_type === 'numeric' && (
-            <div className="space-y-2">
-              <Label htmlFor="target_value">Zielwert</Label>
-              <Input
-                id="target_value"
-                type="number"
-                placeholder="z.B. 50"
-                value={formData.target_value}
-                onChange={(e) => setFormData({ ...formData, target_value: e.target.value })}
-                className="h-12"
-                data-testid="goal-target-input"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start_value">Ausgangslage (Startwert)</Label>
+                <Input
+                  id="start_value"
+                  type="number"
+                  placeholder="z.B. 5"
+                  value={formData.start_value}
+                  onChange={(e) => setFormData({ ...formData, start_value: e.target.value })}
+                  className="h-12"
+                  data-testid="goal-start-input"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="target_value">Zielwert</Label>
+                <Input
+                  id="target_value"
+                  type="number"
+                  placeholder="z.B. 50"
+                  value={formData.target_value}
+                  onChange={(e) => setFormData({ ...formData, target_value: e.target.value })}
+                  className="h-12"
+                  data-testid="goal-target-input"
+                />
+              </div>
             </div>
           )}
+
+          {/* Ausgangslage für alle Zieltypen */}
+          <div className="space-y-2">
+            <Label htmlFor="starting_situation">Wo stehe ich jetzt? (Ausgangslage)</Label>
+            <Textarea
+              id="starting_situation"
+              placeholder="Beschreibe deine aktuelle Situation... z.B. 'Ich laufe aktuell 2x pro Woche 3km'"
+              value={formData.starting_situation}
+              onChange={(e) => setFormData({ ...formData, starting_situation: e.target.value })}
+              className="min-h-[80px]"
+              data-testid="goal-starting-situation-input"
+            />
+          </div>
 
           <div className="space-y-2">
             <Label>Deadline</Label>
