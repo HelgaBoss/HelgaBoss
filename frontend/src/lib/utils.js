@@ -6,12 +6,38 @@ export function cn(...inputs) {
 }
 
 export const CATEGORIES = {
-  health: { label: 'Gesundheit', color: '#22c55e', icon: 'Heart' },
-  career: { label: 'Karriere', color: '#3b82f6', icon: 'Briefcase' },
-  finance: { label: 'Finanzen', color: '#eab308', icon: 'Wallet' },
-  personal: { label: 'Persönlich', color: '#a855f7', icon: 'User' },
-  education: { label: 'Bildung', color: '#f97316', icon: 'GraduationCap' },
-  relationships: { label: 'Beziehungen', color: '#ec4899', icon: 'Users' },
+  health: { label: 'Gesundheit', color: '#fe4939', icon: 'Heart' },
+  career: { label: 'Karriere', color: '#ff904D', icon: 'Briefcase' },
+  finance: { label: 'Finanzen', color: '#fafafa', icon: 'Wallet' },
+  personal: { label: 'Persönlich', color: '#fe4939', icon: 'User' },
+  education: { label: 'Bildung', color: '#ff904D', icon: 'GraduationCap' },
+  relationships: { label: 'Beziehungen', color: '#fafafa', icon: 'Users' },
+};
+
+// Motivations-Quotes auf Deutsch
+export const MOTIVATION_QUOTES = [
+  { text: "Der beste Zeitpunkt anzufangen war gestern. Der zweitbeste ist jetzt.", author: "Chinesisches Sprichwort" },
+  { text: "Kleine Schritte führen zu großen Veränderungen.", author: "Unbekannt" },
+  { text: "Disziplin ist die Brücke zwischen Zielen und Erfolg.", author: "Jim Rohn" },
+  { text: "Erfolg ist die Summe kleiner Anstrengungen, die Tag für Tag wiederholt werden.", author: "Robert Collier" },
+  { text: "Du musst nicht perfekt sein, um anzufangen. Du musst anfangen, um perfekt zu werden.", author: "Zig Ziglar" },
+  { text: "Jeder Tag ist eine neue Chance, das zu werden, was du sein könntest.", author: "George Eliot" },
+  { text: "Gewohnheiten formen deinen Charakter, und dein Charakter formt dein Schicksal.", author: "Unbekannt" },
+  { text: "Der einzige Weg, großartige Arbeit zu leisten, ist zu lieben, was du tust.", author: "Steve Jobs" },
+  { text: "Fortschritt, nicht Perfektion.", author: "Unbekannt" },
+  { text: "Wer aufhört besser zu werden, hat aufgehört gut zu sein.", author: "Philip Rosenthal" },
+];
+
+export const getRandomQuote = () => {
+  return MOTIVATION_QUOTES[Math.floor(Math.random() * MOTIVATION_QUOTES.length)];
+};
+
+export const getWeekNumber = (date) => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 };
 
 export const GOAL_TYPES = {
