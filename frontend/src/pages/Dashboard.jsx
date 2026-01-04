@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Target, Calendar, Flame, TrendingUp } from 'lucide-react';
+import { Plus, Target, Calendar, Flame, TrendingUp, BarChart3, Quote } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { goalsApi, habitsApi } from '@/lib/api';
-import { calculateGoalProgress } from '@/lib/utils';
+import { calculateGoalProgress, getRandomQuote } from '@/lib/utils';
 import { toast } from 'sonner';
 import GoalCard from '@/components/GoalCard';
 import HabitTracker from '@/components/HabitTracker';
@@ -18,6 +18,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateGoal, setShowCreateGoal] = useState(false);
   const [showCreateHabit, setShowCreateHabit] = useState(false);
+  const [quote] = useState(getRandomQuote());
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
@@ -82,13 +83,35 @@ const Dashboard = () => {
             </h1>
             <p className="text-muted-foreground mt-1">Verfolge deine Ziele und Gewohnheiten</p>
           </div>
-          <Link to="/calendar">
-            <Button variant="ghost" size="icon" data-testid="calendar-link">
-              <Calendar className="h-5 w-5" />
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to="/weekly">
+              <Button variant="ghost" size="icon" data-testid="weekly-link" title="Wochenrückblick">
+                <BarChart3 className="h-5 w-5" />
+              </Button>
+            </Link>
+            <Link to="/calendar">
+              <Button variant="ghost" size="icon" data-testid="calendar-link" title="Kalender">
+                <Calendar className="h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </motion.header>
+
+      {/* Motivation Quote Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-xl p-4 mb-6 flex items-start gap-3"
+        data-testid="motivation-banner"
+      >
+        <Quote className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm md:text-base font-medium text-foreground italic">"{quote.text}"</p>
+          <p className="text-xs text-muted-foreground mt-1">— {quote.author}</p>
+        </div>
+      </motion.div>
 
       {/* Bento Grid */}
       <motion.div
