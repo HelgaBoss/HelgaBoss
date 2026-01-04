@@ -1,0 +1,167 @@
+{
+  "identity": {
+    "name": "E1",
+    "role": "Creative Designer (Top 1%)",
+    "principles": [
+      "Fusion over Imitation",
+      "Emotion First",
+      "Content is King",
+      "Zoom in",
+      "Negative Space",
+      "Contrast"
+    ],
+    "anti_patterns": [
+      "Purple/Teal for CTA",
+      "Inter everywhere",
+      "Center-Everything Disease",
+      "Gradient Overload"
+    ]
+  },
+  "design_system": {
+    "theme": "dark",
+    "archetype": "Electric & Neon (Cyber-Zen Variant)",
+    "colors": {
+      "background": "#09090b",
+      "surface": "#121214",
+      "surface_highlight": "#18181b",
+      "border": "#27272a",
+      "primary": "#bef264",
+      "primary_foreground": "#000000",
+      "secondary": "#27272a",
+      "secondary_foreground": "#fafafa",
+      "muted": "#27272a",
+      "muted_foreground": "#a1a1aa",
+      "accent": "#bef264",
+      "accent_foreground": "#000000",
+      "destructive": "#ef4444",
+      "destructive_foreground": "#fafafa",
+      "text": {
+        "primary": "#fafafa",
+        "secondary": "#a1a1aa",
+        "tertiary": "#52525b"
+      }
+    },
+    "typography": {
+      "headings": {
+        "family": "Chivo, sans-serif",
+        "weights": ["900", "700"],
+        "usage": "Use for all H1-H3. Tight tracking (-0.02em)."
+      },
+      "body": {
+        "family": "Plus Jakarta Sans, sans-serif",
+        "weights": ["400", "500", "600"],
+        "usage": "Use for all body text, labels, and UI elements."
+      },
+      "import_url": "https://fonts.googleapis.com/css2?family=Chivo:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    },
+    "spacing": {
+      "scale": "Tailwind Default",
+      "philosophy": "Generous. Use p-6 or p-8 for cards. Gap-6 for grids."
+    },
+    "radius": {
+      "default": "0.75rem",
+      "sm": "0.5rem",
+      "lg": "1rem"
+    },
+    "shadows": {
+      "glow": "0 0 20px -5px rgba(190, 242, 100, 0.15)",
+      "card": "0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px -1px rgba(0, 0, 0, 0.5)"
+    }
+  },
+  "layout_strategies": {
+    "dashboard": {
+      "type": "Bento Grid",
+      "grid_cols": "grid-cols-1 md:grid-cols-4 lg:grid-cols-6",
+      "gap": "gap-4 md:gap-6",
+      "areas": [
+        {
+          "name": "Hero/Focus",
+          "span": "col-span-full md:col-span-4 lg:col-span-4 row-span-2",
+          "content": "Main Goal Progress Circle + Motivation"
+        },
+        {
+          "name": "Habits",
+          "span": "col-span-full md:col-span-2 lg:col-span-2 row-span-2",
+          "content": "Daily Checklist (Vertical List)"
+        },
+        {
+          "name": "Calendar/Heatmap",
+          "span": "col-span-full md:col-span-3 lg:col-span-3",
+          "content": "Activity Heatmap or Calendar View"
+        },
+        {
+          "name": "Quick Actions",
+          "span": "col-span-full md:col-span-3 lg:col-span-3",
+          "content": "Add Goal, Log Milestone Buttons"
+        }
+      ]
+    },
+    "goals_list": {
+      "type": "Masonry or Grid",
+      "style": "Card-based, minimal info, progress bar prominent"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow rounded-full font-bold tracking-wide uppercase text-xs px-6 py-3 transition-all hover:scale-105 active:scale-95",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-full font-medium text-xs px-6 py-3",
+      "ghost": "hover:bg-white/5 text-muted-foreground hover:text-white"
+    },
+    "cards": {
+      "base": "bg-surface border border-border rounded-xl p-6 relative overflow-hidden group hover:border-primary/30 transition-colors",
+      "glass": "bg-surface/60 backdrop-blur-xl border border-white/5"
+    },
+    "inputs": {
+      "base": "bg-surface_highlight border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg h-12 px-4 text-sm placeholder:text-muted-foreground/50"
+    },
+    "progress": {
+      "bar": "h-2 bg-secondary rounded-full overflow-hidden",
+      "indicator": "bg-primary h-full transition-all duration-1000 ease-out"
+    }
+  },
+  "visual_assets": {
+    "textures": [
+      {
+        "url": "https://images.unsplash.com/photo-1762258344624-52d8c3b74c66?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "usage": "Subtle overlay on Dashboard Hero Card (opacity 10%, mix-blend-overlay)",
+        "alt": "Abstract Dark Texture"
+      }
+    ],
+    "icons": {
+      "library": "lucide-react",
+      "style": "Stroke width 1.5px or 2px. Consistent sizing (w-5 h-5)."
+    }
+  },
+  "motion": {
+    "library": "framer-motion",
+    "transitions": {
+      "default": { "type": "spring", "stiffness": 300, "damping": 30 },
+      "slow": { "duration": 0.5, "ease": "easeOut" }
+    },
+    "variants": {
+      "fadeIn": {
+        "initial": { "opacity": 0, "y": 10 },
+        "animate": { "opacity": 1, "y": 0 }
+      },
+      "staggerContainer": {
+        "animate": { "transition": { "staggerChildren": 0.1 } }
+      }
+    }
+  },
+  "instructions_to_main_agent": [
+    "1. UPDATE TAILWIND CONFIG: Replace the existing colors in tailwind.config.js with the 'Cyber-Zen' palette defined above. Use CSS variables in index.css for dynamic theme support if needed, or hardcode in config for simplicity given 'Dark Mode Only' constraint.",
+    "2. INSTALL FONTS: Add the Google Fonts import link to public/index.html or import in index.css.",
+    "3. CREATE LAYOUT: Build the 'Dashboard' using the Bento Grid strategy. Use 'framer-motion' for entrance animations.",
+    "4. CUSTOMIZE SHADCN: Override default Shadcn styles (radius, colors) to match the design system. Specifically, make buttons 'pill-shaped' (rounded-full) and inputs taller (h-12).",
+    "5. IMPLEMENT FEATURES: Build the Goal Tracking, Milestones, and Habits logic using local state or a simple mock backend context if actual backend isn't ready.",
+    "6. USE TEXTURE: Apply the provided Unsplash texture URL as a background image for the main 'Hero' card on the dashboard to give it depth.",
+    "7. DATA-TESTID: Ensure all interactive elements have data-testid attributes."
+  ],
+  "universal_guidelines": [
+    "Do not use gradients for backgrounds, use solid dark colors.",
+    "Use 'sonner' for toasts.",
+    "Ensure all text has sufficient contrast (APCA/WCAG).",
+    "Avoid 'Inter' font; use 'Plus Jakarta Sans' and 'Chivo'.",
+    "Make sure the app feels 'premium' and 'focused'."
+  ]
+}
