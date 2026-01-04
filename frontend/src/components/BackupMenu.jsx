@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Cloud, CloudOff, Download, Upload, LogOut, User } from 'lucide-react';
+import { Cloud, CloudOff, Download, Upload, LogOut, User, Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,10 +9,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { authApi, backupApi } from '@/lib/api';
+import { useDeadlineNotifications } from '@/hooks/useDeadlineNotifications';
 import { toast } from 'sonner';
 
 const BackupMenu = ({ user, onUserChange, onDataChange }) => {
   const [syncing, setSyncing] = useState(false);
+  const { isSupported, isEnabled, enable, disable } = useDeadlineNotifications();
 
   const handleLogin = () => {
     // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
@@ -104,6 +106,20 @@ const BackupMenu = ({ user, onUserChange, onDataChange }) => {
     input.click();
   };
 
+  const handleToggleNotifications = async () => {
+    if (isEnabled) {
+      disable();
+      toast.success('Benachrichtigungen deaktiviert');
+    } else {
+      const granted = await enable();
+      if (granted) {
+        toast.success('Benachrichtigungen aktiviert! Du wirst an Deadlines erinnert.');
+      } else {
+        toast.error('Benachrichtigungen wurden blockiert. Bitte in den Browser-Einstellungen erlauben.');
+      }
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -159,6 +175,27 @@ const BackupMenu = ({ user, onUserChange, onDataChange }) => {
             <DropdownMenuSeparator />
           </>
         )}
+        
+        {/* Notifications Toggle */}
+        {isSupported && (
+          <>
+            <DropdownMenuItem onClick={handleToggleNotifications} data-testid="toggle-notifications">
+              {isEnabled ? (
+                <>
+                  <Bell className="mr-2 h-4 w-4 text-primary" />
+                  Erinnerungen aktiv
+                </>
+              ) : (
+                <>
+                  <BellOff className="mr-2 h-4 w-4" />
+                  Erinnerungen aktivieren
+                </>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        
         <DropdownMenuItem onClick={handleExportFile} data-testid="export-file">
           <Download className="mr-2 h-4 w-4" />
           Als Datei exportieren
