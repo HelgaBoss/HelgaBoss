@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Target, Calendar, Flame, TrendingUp, BarChart3, Quote } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { goalsApi, habitsApi, authApi } from '@/lib/api';
+import { goalsApi, habitsApi, authApi, backupApi } from '@/lib/api';
 import { calculateGoalProgress, getRandomQuote } from '@/lib/utils';
 import { toast } from 'sonner';
 import GoalCard from '@/components/GoalCard';
@@ -12,6 +12,8 @@ import CreateGoalDialog from '@/components/CreateGoalDialog';
 import CreateHabitDialog from '@/components/CreateHabitDialog';
 import ProgressCircle from '@/components/ProgressCircle';
 import BackupMenu from '@/components/BackupMenu';
+import { useAutoBackup } from '@/hooks/useAutoBackup';
+import { useDeadlineNotifications } from '@/hooks/useDeadlineNotifications';
 
 const Dashboard = () => {
   const location = useLocation();
@@ -22,7 +24,14 @@ const Dashboard = () => {
   const [showCreateHabit, setShowCreateHabit] = useState(false);
   const [quote] = useState(getRandomQuote());
   const [user, setUser] = useState(location.state?.user || null);
+  const [dataVersion, setDataVersion] = useState(0); // Track data changes
   const currentYear = new Date().getFullYear();
+
+  // Auto-backup when data changes and user is logged in
+  const { triggerBackup } = useAutoBackup(user, [dataVersion]);
+  
+  // Deadline notifications
+  const { checkNow: checkDeadlines } = useDeadlineNotifications();
 
   useEffect(() => {
     // Check if user just logged in
@@ -48,6 +57,13 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
+  // Check deadlines when goals change
+  useEffect(() => {
+    if (goals.length > 0) {
+      checkDeadlines();
+    }
+  }, [goals, checkDeadlines]);
+
   const fetchData = async () => {
     try {
       const [goalsRes, habitsRes] = await Promise.all([
@@ -63,6 +79,19 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+
+  // Wrapper for fetchData that also triggers backup
+  const fetchDataAndBackup = useCallback(async () => {
+    await fetchData();
+    setDataVersion(v => v + 1); // Trigger auto-backup check
+    
+    // If user is logged in, trigger backup after data change
+    if (user) {
+      setTimeout(() => {
+        triggerBackup();
+      }, 1000); // Small delay to ensure localStorage is updated
+    }
+  }, [user, triggerBackup]);
 
   const overallProgress = goals.length > 0
     ? Math.round(goals.reduce((acc, goal) => acc + calculateGoalProgress(goal), 0) / goals.length)
@@ -107,7 +136,7 @@ const Dashboard = () => {
             <p className="text-muted-foreground mt-1">Verfolge deine Ziele und Gewohnheiten</p>
           </div>
           <div className="flex gap-2">
-            <BackupMenu user={user} onUserChange={setUser} onDataChange={fetchData} />
+            <BackupMenu user={user} onUserChange={setUser} onDataChange={fetchDataAndBackup} />
             <Link to="/weekly">
               <Button variant="ghost" size="icon" data-testid="weekly-link" title="Wochenrückblick">
                 <BarChart3 className="h-5 w-5" />
@@ -197,7 +226,7 @@ const Dashboard = () => {
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          <HabitTracker habits={habits} onUpdate={fetchData} />
+          <HabitTracker habits={habits} onUpdate={fetchDataAndBackup} />
         </motion.div>
 
         {/* Goals Grid */}
@@ -253,12 +282,12 @@ const Dashboard = () => {
       <CreateGoalDialog
         open={showCreateGoal}
         onOpenChange={setShowCreateGoal}
-        onSuccess={fetchData}
+        onSuccess={fetchDataAndBackup}
       />
       <CreateHabitDialog
         open={showCreateHabit}
         onOpenChange={setShowCreateHabit}
-        onSuccess={fetchData}
+        onSuccess={fetchDataAndBackup}
       />
     </div>
   );
