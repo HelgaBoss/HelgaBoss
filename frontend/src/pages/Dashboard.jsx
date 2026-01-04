@@ -313,7 +313,7 @@ const Dashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + index * 0.05 }}
               >
-                <GoalCard goal={goal} />
+                <GoalCard goal={goal} onUpdate={fetchDataAndBackup} />
               </motion.div>
             ))}
           </div>
