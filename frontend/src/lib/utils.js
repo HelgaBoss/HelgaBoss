@@ -32,6 +32,14 @@ export const getRandomQuote = () => {
   return MOTIVATION_QUOTES[Math.floor(Math.random() * MOTIVATION_QUOTES.length)];
 };
 
+// Täglicher Quote - basiert auf dem Datum, wechselt täglich
+export const getDailyQuote = () => {
+  const today = new Date();
+  const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+  const index = dayOfYear % MOTIVATION_QUOTES.length;
+  return MOTIVATION_QUOTES[index];
+};
+
 export const getWeekNumber = (date) => {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;

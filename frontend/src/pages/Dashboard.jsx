@@ -4,7 +4,7 @@ import { Plus, Target, Calendar, Flame, TrendingUp, BarChart3, Quote } from 'luc
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { goalsApi, habitsApi, authApi, backupApi } from '@/lib/api';
-import { calculateGoalProgress, getRandomQuote } from '@/lib/utils';
+import { calculateGoalProgress, getDailyQuote } from '@/lib/utils';
 import { toast } from 'sonner';
 import GoalCard from '@/components/GoalCard';
 import HabitTracker from '@/components/HabitTracker';
@@ -22,7 +22,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateGoal, setShowCreateGoal] = useState(false);
   const [showCreateHabit, setShowCreateHabit] = useState(false);
-  const [quote] = useState(getRandomQuote());
+  const [quote] = useState(getDailyQuote());
   const [user, setUser] = useState(location.state?.user || null);
   const [dataVersion, setDataVersion] = useState(0); // Track data changes
   const currentYear = new Date().getFullYear();

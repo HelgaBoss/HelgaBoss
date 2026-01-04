@@ -5,7 +5,7 @@ import { ArrowLeft, TrendingUp, Flame, Target, CheckCircle2, Calendar } from 'lu
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { goalsApi, habitsApi } from '@/lib/api';
-import { CATEGORIES, calculateGoalProgress, getWeekNumber, getRandomQuote } from '@/lib/utils';
+import { CATEGORIES, calculateGoalProgress, getWeekNumber, getDailyQuote } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const WeeklyReview = () => {
@@ -13,7 +13,7 @@ const WeeklyReview = () => {
   const [goals, setGoals] = useState([]);
   const [habits, setHabits] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [quote] = useState(getRandomQuote());
+  const [quote] = useState(getDailyQuote());
   
   const currentYear = new Date().getFullYear();
   const currentWeek = getWeekNumber(new Date());
