@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, X } from 'lucide-react';
 import { habitsApi } from '@/lib/api';
 import { CATEGORIES } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -14,6 +15,26 @@ const CreateHabitDialog = ({ open, onOpenChange, onSuccess }) => {
     title: '',
     category: '',
   });
+  const [options, setOptions] = useState([]);
+  const [newOption, setNewOption] = useState('');
+
+  const handleAddOption = () => {
+    if (newOption.trim() && !options.includes(newOption.trim())) {
+      setOptions([...options, newOption.trim()]);
+      setNewOption('');
+    }
+  };
+
+  const handleRemoveOption = (optionToRemove) => {
+    setOptions(options.filter(opt => opt !== optionToRemove));
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddOption();
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,10 +48,13 @@ const CreateHabitDialog = ({ open, onOpenChange, onSuccess }) => {
       await habitsApi.create({
         title: formData.title,
         category: formData.category,
+        options: options,
       });
       toast.success('Gewohnheit erstellt!');
       onOpenChange(false);
       setFormData({ title: '', category: '' });
+      setOptions([]);
+      setNewOption('');
       onSuccess();
     } catch (error) {
       toast.error('Fehler beim Erstellen');
@@ -42,7 +66,7 @@ const CreateHabitDialog = ({ open, onOpenChange, onSuccess }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] bg-card border-border" data-testid="create-habit-dialog">
+      <DialogContent className="sm:max-w-[450px] bg-card border-border" data-testid="create-habit-dialog">
         <DialogHeader>
           <DialogTitle className="text-xl font-black">Neue Gewohnheit</DialogTitle>
         </DialogHeader>
@@ -83,6 +107,56 @@ const CreateHabitDialog = ({ open, onOpenChange, onSuccess }) => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Custom Options */}
+          <div className="space-y-2">
+            <Label>Auswahloptionen (optional)</Label>
+            <p className="text-xs text-muted-foreground">
+              Füge Optionen hinzu, die du beim Abhaken auswählen kannst
+            </p>
+            
+            <div className="flex gap-2">
+              <Input
+                placeholder="z.B. Joggen, Yoga, Schwimmen..."
+                value={newOption}
+                onChange={(e) => setNewOption(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="h-10"
+                data-testid="habit-option-input"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleAddOption}
+                className="h-10 w-10 flex-shrink-0"
+                data-testid="habit-add-option-btn"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Options Tags */}
+            {options.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {options.map((option, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/20 text-primary text-sm"
+                  >
+                    {option}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveOption(option)}
+                      className="hover:text-primary-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <DialogFooter>
