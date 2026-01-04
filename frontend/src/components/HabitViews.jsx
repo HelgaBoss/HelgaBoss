@@ -21,11 +21,6 @@ export const DayView = ({ habits, onUpdate, selectedDate }) => {
   const handleHabitClick = (habit) => {
     const isCompleted = habit.completions?.includes(dateStr);
     
-    if (!isToday) {
-      toast.error('Nur heute kann abgehakt werden');
-      return;
-    }
-    
     // If already completed, toggle off
     if (isCompleted) {
       handleUncomplete(habit.id);
@@ -130,12 +125,12 @@ export const DayView = ({ habits, onUpdate, selectedDate }) => {
                 isCompleted
                   ? 'bg-primary/10 border-primary/30'
                   : 'bg-secondary/30 border-border hover:border-primary/30'
-              } ${!isToday ? 'opacity-60' : ''}`}
+              }`}
               data-testid={`day-habit-${habit.id}`}
             >
               {/* Main row */}
               <div
-                className={`p-4 flex items-center gap-4 ${isToday ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                className="p-4 flex items-center gap-4 cursor-pointer"
                 onClick={() => handleHabitClick(habit)}
               >
                 {/* Checkbox */}
@@ -167,7 +162,7 @@ export const DayView = ({ habits, onUpdate, selectedDate }) => {
                 </div>
 
                 {/* Edit button for completed habits */}
-                {isCompleted && isToday && (
+                {isCompleted && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -191,7 +186,7 @@ export const DayView = ({ habits, onUpdate, selectedDate }) => {
               {isCompleted && (todayOption || todayNote) && !isEditing && (
                 <div 
                   className="px-4 pb-4 pt-0 flex flex-wrap gap-2 cursor-pointer"
-                  onClick={(e) => isToday && openEditor(habit, e)}
+                  onClick={(e) => openEditor(habit, e)}
                 >
                   {todayOption && (
                     <span className="text-sm bg-accent/20 text-accent px-3 py-1 rounded-full">
