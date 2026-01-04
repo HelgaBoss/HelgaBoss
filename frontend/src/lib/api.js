@@ -34,7 +34,9 @@ export const goalsApi = {
     const newGoal = {
       id: generateId(),
       ...data,
-      current_value: 0,
+      current_value: data.start_value || 0,
+      start_value: data.start_value || 0,
+      starting_situation: data.starting_situation || null,
       milestones: [],
       created_at: new Date().toISOString(),
       year: data.year || new Date().getFullYear(),

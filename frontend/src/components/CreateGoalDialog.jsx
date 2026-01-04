@@ -20,6 +20,8 @@ const CreateGoalDialog = ({ open, onOpenChange, onSuccess }) => {
     category: '',
     goal_type: '',
     target_value: '',
+    start_value: '',
+    starting_situation: '',
     deadline: null,
   });
 
@@ -38,6 +40,8 @@ const CreateGoalDialog = ({ open, onOpenChange, onSuccess }) => {
         category: formData.category,
         goal_type: formData.goal_type,
         target_value: formData.goal_type === 'numeric' ? parseInt(formData.target_value) || null : null,
+        start_value: formData.goal_type === 'numeric' ? parseInt(formData.start_value) || 0 : 0,
+        starting_situation: formData.starting_situation || null,
         deadline: formData.deadline ? formData.deadline.toISOString() : null,
       });
       toast.success('Ziel erstellt!');
@@ -48,6 +52,8 @@ const CreateGoalDialog = ({ open, onOpenChange, onSuccess }) => {
         category: '',
         goal_type: '',
         target_value: '',
+        start_value: '',
+        starting_situation: '',
         deadline: null,
       });
       onSuccess();
