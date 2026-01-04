@@ -170,6 +170,24 @@ export const habitsApi = {
       }
     }
     
+    // Calculate streak from today backwards
+    const sortedCompletions = [...habit.completions].sort().reverse();
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let i = 0; i < 365; i++) { // Check up to a year
+      const checkDate = new Date(today);
+      checkDate.setDate(today.getDate() - i);
+      const checkStr = checkDate.toISOString().split('T')[0];
+      
+      if (sortedCompletions.includes(checkStr)) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    
     // Calculate streak
     const sortedCompletions = [...habit.completions].sort().reverse();
     let streak = 0;
