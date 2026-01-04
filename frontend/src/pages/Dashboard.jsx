@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Target, Calendar, Flame, TrendingUp, BarChart3, Quote } from 'lucide-react';
+import { Plus, Target, Calendar, Flame, TrendingUp, BarChart3, Quote, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { goalsApi, habitsApi, authApi, backupApi } from '@/lib/api';
-import { calculateGoalProgress, getDailyQuote } from '@/lib/utils';
+import { calculateGoalProgress, getDailyQuote, getTodayISO } from '@/lib/utils';
 import { toast } from 'sonner';
 import GoalCard from '@/components/GoalCard';
-import HabitTracker from '@/components/HabitTracker';
 import CreateGoalDialog from '@/components/CreateGoalDialog';
 import CreateHabitDialog from '@/components/CreateHabitDialog';
 import ProgressCircle from '@/components/ProgressCircle';
 import BackupMenu from '@/components/BackupMenu';
+import { DayView, WeekView, MonthView, YearView } from '@/components/HabitViews';
 import { useAutoBackup } from '@/hooks/useAutoBackup';
 import { useDeadlineNotifications } from '@/hooks/useDeadlineNotifications';
 
@@ -24,40 +25,32 @@ const Dashboard = () => {
   const [showCreateHabit, setShowCreateHabit] = useState(false);
   const [quote] = useState(getDailyQuote());
   const [user, setUser] = useState(location.state?.user || null);
-  const [dataVersion, setDataVersion] = useState(0); // Track data changes
+  const [dataVersion, setDataVersion] = useState(0);
+  const [habitView, setHabitView] = useState('day');
+  const [currentDate, setCurrentDate] = useState(new Date());
   const currentYear = new Date().getFullYear();
 
-  // Auto-backup when data changes and user is logged in
   const { triggerBackup } = useAutoBackup(user, [dataVersion]);
-  
-  // Deadline notifications
   const { checkNow: checkDeadlines } = useDeadlineNotifications();
 
   useEffect(() => {
-    // Check if user just logged in
     if (location.state?.justLoggedIn) {
       toast.success(`Willkommen, ${location.state.user?.name}!`);
-      // Clear state
       window.history.replaceState({}, document.title);
     }
     
-    // Check auth status (silent, no error if not logged in)
     const checkAuth = async () => {
       if (!user) {
         try {
           const currentUser = await authApi.getMe();
           if (currentUser) setUser(currentUser);
-        } catch (e) {
-          // Not logged in - OK
-        }
+        } catch (e) {}
       }
     };
     checkAuth();
-    
     fetchData();
   }, []);
 
-  // Check deadlines when goals change
   useEffect(() => {
     if (goals.length > 0) {
       checkDeadlines();
@@ -74,22 +67,16 @@ const Dashboard = () => {
       setHabits(habitsRes.data);
     } catch (error) {
       toast.error('Fehler beim Laden der Daten');
-      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Wrapper for fetchData that also triggers backup
   const fetchDataAndBackup = useCallback(async () => {
     await fetchData();
-    setDataVersion(v => v + 1); // Trigger auto-backup check
-    
-    // If user is logged in, trigger backup after data change
+    setDataVersion(v => v + 1);
     if (user) {
-      setTimeout(() => {
-        triggerBackup();
-      }, 1000); // Small delay to ensure localStorage is updated
+      setTimeout(() => triggerBackup(), 1000);
     }
   }, [user, triggerBackup]);
 
@@ -97,20 +84,47 @@ const Dashboard = () => {
     ? Math.round(goals.reduce((acc, goal) => acc + calculateGoalProgress(goal), 0) / goals.length)
     : 0;
 
-  const totalStreak = habits.reduce((acc, h) => acc + (h.streak || 0), 0);
+  const todayCompleted = habits.filter(h => h.completions?.includes(getTodayISO())).length;
+  const bestStreak = Math.max(...habits.map(h => h.streak || 0), 0);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
+  // Date navigation
+  const navigateDate = (direction) => {
+    const newDate = new Date(currentDate);
+    if (habitView === 'day') {
+      newDate.setDate(newDate.getDate() + direction);
+    } else if (habitView === 'week') {
+      newDate.setDate(newDate.getDate() + direction * 7);
+    } else if (habitView === 'month') {
+      newDate.setMonth(newDate.getMonth() + direction);
+    } else if (habitView === 'year') {
+      newDate.setFullYear(newDate.getFullYear() + direction);
+    }
+    setCurrentDate(newDate);
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  // Format date display
+  const getDateDisplay = () => {
+    const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    if (habitView === 'day') {
+      return currentDate.toLocaleDateString('de-DE', options);
+    } else if (habitView === 'week') {
+      const start = new Date(currentDate);
+      start.setDate(start.getDate() - start.getDay() + 1);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      return `${start.getDate()}.${start.getMonth() + 1}. - ${end.getDate()}.${end.getMonth() + 1}.${end.getFullYear()}`;
+    } else if (habitView === 'month') {
+      return currentDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    } else {
+      return currentDate.getFullYear().toString();
     }
   };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
+  const isToday = currentDate.toISOString().split('T')[0] === getTodayISO();
 
   if (loading) {
     return (
@@ -126,24 +140,23 @@ const Dashboard = () => {
       <motion.header 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
+        className="mb-6"
       >
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl md:text-4xl font-black text-foreground" data-testid="dashboard-title">
+            <h1 className="text-2xl md:text-3xl font-black text-foreground" data-testid="dashboard-title">
               Jahresziele {currentYear}
             </h1>
-            <p className="text-muted-foreground mt-1">Verfolge deine Ziele und Gewohnheiten</p>
           </div>
           <div className="flex gap-2">
             <BackupMenu user={user} onUserChange={setUser} onDataChange={fetchDataAndBackup} />
             <Link to="/weekly">
-              <Button variant="ghost" size="icon" data-testid="weekly-link" title="Wochenrückblick">
+              <Button variant="ghost" size="icon" title="Wochenrückblick">
                 <BarChart3 className="h-5 w-5" />
               </Button>
             </Link>
             <Link to="/calendar">
-              <Button variant="ghost" size="icon" data-testid="calendar-link" title="Kalender">
+              <Button variant="ghost" size="icon" title="Kalender">
                 <Calendar className="h-5 w-5" />
               </Button>
             </Link>
@@ -151,7 +164,35 @@ const Dashboard = () => {
         </div>
       </motion.header>
 
-      {/* Motivation Quote Banner */}
+      {/* Current Date Display */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-card border border-border rounded-xl p-4 mb-6"
+      >
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="icon" onClick={() => navigateDate(-1)}>
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          
+          <div className="text-center flex-1">
+            <h2 className="text-xl md:text-2xl font-black" data-testid="current-date">
+              {getDateDisplay()}
+            </h2>
+            {!isToday && habitView === 'day' && (
+              <Button variant="link" size="sm" onClick={goToToday} className="text-primary">
+                Heute
+              </Button>
+            )}
+          </div>
+          
+          <Button variant="ghost" size="icon" onClick={() => navigateDate(1)}>
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* Motivation Quote */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -166,116 +207,117 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
-      {/* Bento Grid */}
+      {/* Quick Stats */}
       <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="bento-grid"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="grid grid-cols-3 gap-3 mb-6"
       >
-        {/* Hero Card - Overall Progress */}
-        <motion.div
-          variants={itemVariants}
-          className="col-span-full md:col-span-4 lg:col-span-4 row-span-2 bg-card border border-border rounded-xl p-6 relative overflow-hidden group hover:border-primary/30 transition-colors"
-          data-testid="hero-card"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-          <div className="relative z-10 h-full flex flex-col">
-            <div className="flex items-center gap-2 mb-4">
-              <Target className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium text-muted-foreground">Gesamtfortschritt</span>
-            </div>
-            
-            <div className="flex-1 flex items-center justify-center">
-              <ProgressCircle progress={overallProgress} size={200} />
-            </div>
+        <div className="bg-card border border-border rounded-xl p-4 text-center">
+          <Target className="h-5 w-5 mx-auto mb-1 text-primary" />
+          <span className="text-2xl font-black">{overallProgress}%</span>
+          <p className="text-xs text-muted-foreground">Ziele</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4 text-center">
+          <TrendingUp className="h-5 w-5 mx-auto mb-1 text-primary" />
+          <span className="text-2xl font-black">{todayCompleted}/{habits.length}</span>
+          <p className="text-xs text-muted-foreground">Heute</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4 text-center">
+          <Flame className="h-5 w-5 mx-auto mb-1 text-accent" />
+          <span className="text-2xl font-black">{bestStreak}</span>
+          <p className="text-xs text-muted-foreground">Streak</p>
+        </div>
+      </motion.div>
 
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <div className="bg-secondary/50 rounded-lg p-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  <span className="text-2xl font-bold">{goals.length}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Aktive Ziele</p>
-              </div>
-              <div className="bg-secondary/50 rounded-lg p-4">
-                <div className="flex items-center gap-2">
-                  <Flame className="h-4 w-4 text-orange-500" />
-                  <span className="text-2xl font-bold">{totalStreak}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Tage Streak</p>
-              </div>
-            </div>
+      {/* Habits Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-card border border-border rounded-xl p-4 mb-6"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold text-lg">Tägliche Gewohnheiten</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowCreateHabit(true)}
+            data-testid="create-habit-btn"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* View Tabs */}
+        <Tabs value={habitView} onValueChange={setHabitView} className="mb-4">
+          <TabsList className="grid grid-cols-4 w-full">
+            <TabsTrigger value="day" data-testid="tab-day">Tag</TabsTrigger>
+            <TabsTrigger value="week" data-testid="tab-week">Woche</TabsTrigger>
+            <TabsTrigger value="month" data-testid="tab-month">Monat</TabsTrigger>
+            <TabsTrigger value="year" data-testid="tab-year">Jahr</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* View Content */}
+        {habitView === 'day' && (
+          <DayView 
+            habits={habits} 
+            onUpdate={fetchDataAndBackup} 
+            selectedDate={currentDate.toISOString().split('T')[0]} 
+          />
+        )}
+        {habitView === 'week' && (
+          <WeekView habits={habits} currentDate={currentDate} />
+        )}
+        {habitView === 'month' && (
+          <MonthView habits={habits} currentDate={currentDate} />
+        )}
+        {habitView === 'year' && (
+          <YearView habits={habits} currentDate={currentDate} />
+        )}
+      </motion.div>
+
+      {/* Goals Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        data-testid="goals-section"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold text-lg">Meine Ziele</h2>
+          <Button
+            onClick={() => setShowCreateGoal(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full text-xs px-4"
+            data-testid="create-goal-btn"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Neues Ziel
+          </Button>
+        </div>
+
+        {goals.length === 0 ? (
+          <div className="bg-card border border-border rounded-xl p-12 text-center" data-testid="empty-goals">
+            <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Noch keine Ziele</h3>
+            <p className="text-muted-foreground mb-4">Erstelle dein erstes Jahresziel</p>
           </div>
-        </motion.div>
-
-        {/* Habits Card */}
-        <motion.div
-          variants={itemVariants}
-          className="col-span-full md:col-span-2 lg:col-span-2 row-span-2 bg-card border border-border rounded-xl p-6 overflow-hidden"
-          data-testid="habits-card"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-lg">Tägliche Gewohnheiten</h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowCreateHabit(true)}
-              data-testid="create-habit-btn"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          <HabitTracker habits={habits} onUpdate={fetchDataAndBackup} />
-        </motion.div>
-
-        {/* Goals Grid */}
-        <motion.div
-          variants={itemVariants}
-          className="col-span-full"
-          data-testid="goals-section"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-xl">Meine Ziele</h2>
-            <Button
-              onClick={() => setShowCreateGoal(true)}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full font-bold tracking-wide uppercase text-xs px-6 py-3 glow-primary"
-              data-testid="create-goal-btn"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Neues Ziel
-            </Button>
-          </div>
-
-          {goals.length === 0 ? (
-            <div className="bg-card border border-border rounded-xl p-12 text-center" data-testid="empty-goals">
-              <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Noch keine Ziele</h3>
-              <p className="text-muted-foreground mb-4">Erstelle dein erstes Jahresziel</p>
-              <Button
-                onClick={() => setShowCreateGoal(true)}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full"
-                data-testid="create-first-goal-btn"
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {goals.map((goal, index) => (
+              <motion.div
+                key={goal.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + index * 0.05 }}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Ziel erstellen
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {goals.map((goal, index) => (
-                <motion.div
-                  key={goal.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <GoalCard goal={goal} />
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </motion.div>
+                <GoalCard goal={goal} />
+              </motion.div>
+            ))}
+          </div>
+        )}
       </motion.div>
 
       {/* Dialogs */}
