@@ -1,38 +1,271 @@
-import axios from 'axios';
+// LocalStorage-basierte API für offline Datenspeicherung
+// Daten bleiben NUR auf deinem Gerät
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+const STORAGE_KEYS = {
+  GOALS: 'jahresziele_goals',
+  HABITS: 'jahresziele_habits',
+};
 
-const api = axios.create({
-  baseURL: API,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// Helper: Generate UUID
+const generateId = () => {
+  return 'id_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+};
 
-// Goals API
+// Helper: Get today's date as ISO string
+const getTodayISO = () => new Date().toISOString().split('T')[0];
+
+// Goals API (LocalStorage)
 export const goalsApi = {
-  getAll: (year) => api.get('/goals', { params: year ? { year } : {} }),
-  getOne: (id) => api.get(`/goals/${id}`),
-  create: (data) => api.post('/goals', data),
-  update: (id, data) => api.put(`/goals/${id}`, data),
-  delete: (id) => api.delete(`/goals/${id}`),
-  updateProgress: (id, value) => api.put(`/goals/${id}/progress?value=${value}`),
+  getAll: async (year) => {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEYS.GOALS) || '[]');
+    const filtered = year ? goals.filter(g => g.year === year) : goals;
+    return { data: filtered };
+  },
+
+  getOne: async (id) => {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEYS.GOALS) || '[]');
+    const goal = goals.find(g => g.id === id);
+    if (!goal) throw new Error('Goal not found');
+    return { data: goal };
+  },
+
+  create: async (data) => {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEYS.GOALS) || '[]');
+    const newGoal = {
+      id: generateId(),
+      ...data,
+      current_value: 0,
+      milestones: [],
+      created_at: new Date().toISOString(),
+      year: data.year || new Date().getFullYear(),
+    };
+    goals.push(newGoal);
+    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+    return { data: newGoal };
+  },
+
+  update: async (id, data) => {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEYS.GOALS) || '[]');
+    const index = goals.findIndex(g => g.id === id);
+    if (index === -1) throw new Error('Goal not found');
+    goals[index] = { ...goals[index], ...data };
+    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+    return { data: goals[index] };
+  },
+
+  delete: async (id) => {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEYS.GOALS) || '[]');
+    const filtered = goals.filter(g => g.id !== id);
+    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(filtered));
+    return { data: { message: 'Deleted' } };
+  },
+
+  updateProgress: async (id, value) => {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEYS.GOALS) || '[]');
+    const index = goals.findIndex(g => g.id === id);
+    if (index === -1) throw new Error('Goal not found');
+    goals[index].current_value = value;
+    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+    return { data: goals[index] };
+  },
 };
 
-// Milestones API
+// Milestones API (LocalStorage)
 export const milestonesApi = {
-  add: (goalId, data) => api.post(`/goals/${goalId}/milestones`, data),
-  toggle: (goalId, milestoneId) => api.put(`/goals/${goalId}/milestones/${milestoneId}/toggle`),
-  delete: (goalId, milestoneId) => api.delete(`/goals/${goalId}/milestones/${milestoneId}`),
+  add: async (goalId, data) => {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEYS.GOALS) || '[]');
+    const index = goals.findIndex(g => g.id === goalId);
+    if (index === -1) throw new Error('Goal not found');
+    
+    const milestone = {
+      id: generateId(),
+      title: data.title,
+      deadline: data.deadline || null,
+      completed: false,
+    };
+    
+    goals[index].milestones = goals[index].milestones || [];
+    goals[index].milestones.push(milestone);
+    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+    return { data: goals[index] };
+  },
+
+  toggle: async (goalId, milestoneId) => {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEYS.GOALS) || '[]');
+    const goalIndex = goals.findIndex(g => g.id === goalId);
+    if (goalIndex === -1) throw new Error('Goal not found');
+    
+    const milestone = goals[goalIndex].milestones?.find(m => m.id === milestoneId);
+    if (milestone) {
+      milestone.completed = !milestone.completed;
+    }
+    
+    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+    return { data: goals[goalIndex] };
+  },
+
+  delete: async (goalId, milestoneId) => {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEYS.GOALS) || '[]');
+    const goalIndex = goals.findIndex(g => g.id === goalId);
+    if (goalIndex === -1) throw new Error('Goal not found');
+    
+    goals[goalIndex].milestones = goals[goalIndex].milestones?.filter(m => m.id !== milestoneId) || [];
+    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+    return { data: goals[goalIndex] };
+  },
 };
 
-// Habits API
+// Habits API (LocalStorage)
 export const habitsApi = {
-  getAll: () => api.get('/habits'),
-  create: (data) => api.post('/habits', data),
-  complete: (id, date) => api.put(`/habits/${id}/complete`, { date }),
-  delete: (id) => api.delete(`/habits/${id}`),
+  getAll: async () => {
+    const habits = JSON.parse(localStorage.getItem(STORAGE_KEYS.HABITS) || '[]');
+    return { data: habits };
+  },
+
+  create: async (data) => {
+    const habits = JSON.parse(localStorage.getItem(STORAGE_KEYS.HABITS) || '[]');
+    const newHabit = {
+      id: generateId(),
+      title: data.title,
+      category: data.category,
+      streak: 0,
+      completions: [],
+      created_at: new Date().toISOString(),
+    };
+    habits.push(newHabit);
+    localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
+    return { data: newHabit };
+  },
+
+  complete: async (id, date) => {
+    const habits = JSON.parse(localStorage.getItem(STORAGE_KEYS.HABITS) || '[]');
+    const index = habits.findIndex(h => h.id === id);
+    if (index === -1) throw new Error('Habit not found');
+    
+    const habit = habits[index];
+    const dateStr = date;
+    
+    // Toggle completion
+    if (habit.completions.includes(dateStr)) {
+      habit.completions = habit.completions.filter(d => d !== dateStr);
+    } else {
+      habit.completions.push(dateStr);
+    }
+    
+    // Calculate streak
+    const sortedCompletions = [...habit.completions].sort().reverse();
+    let streak = 0;
+    const today = new Date();
+    
+    for (let i = 0; i < sortedCompletions.length; i++) {
+      const expectedDate = new Date(today);
+      expectedDate.setDate(today.getDate() - i);
+      const expectedStr = expectedDate.toISOString().split('T')[0];
+      
+      if (sortedCompletions[i] === expectedStr) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    
+    habit.streak = streak;
+    localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
+    return { data: habit };
+  },
+
+  delete: async (id) => {
+    const habits = JSON.parse(localStorage.getItem(STORAGE_KEYS.HABITS) || '[]');
+    const filtered = habits.filter(h => h.id !== id);
+    localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(filtered));
+    return { data: { message: 'Deleted' } };
+  },
 };
 
-export default api;
+// Backup API (Server für Cloud-Sync)
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+export const backupApi = {
+  // Export all data as JSON
+  exportData: () => {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEYS.GOALS) || '[]');
+    const habits = JSON.parse(localStorage.getItem(STORAGE_KEYS.HABITS) || '[]');
+    return {
+      goals,
+      habits,
+      backup_date: new Date().toISOString(),
+      version: '1.0',
+    };
+  },
+
+  // Import data from JSON
+  importData: (data) => {
+    if (data.goals) {
+      localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(data.goals));
+    }
+    if (data.habits) {
+      localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(data.habits));
+    }
+    return true;
+  },
+
+  // Save to cloud (requires auth)
+  saveToCloud: async () => {
+    const data = backupApi.exportData();
+    const response = await fetch(`${BACKEND_URL}/api/backup/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Backup failed');
+    return response.json();
+  },
+
+  // Load from cloud (requires auth)
+  loadFromCloud: async () => {
+    const response = await fetch(`${BACKEND_URL}/api/backup/load`, {
+      credentials: 'include',
+    });
+    if (!response.ok) throw new Error('Load failed');
+    return response.json();
+  },
+};
+
+// Auth API
+export const authApi = {
+  getMe: async () => {
+    const response = await fetch(`${BACKEND_URL}/api/auth/me`, {
+      credentials: 'include',
+    });
+    if (!response.ok) return null;
+    return response.json();
+  },
+
+  createSession: async (sessionId) => {
+    const response = await fetch(`${BACKEND_URL}/api/auth/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (!response.ok) throw new Error('Session creation failed');
+    return response.json();
+  },
+
+  logout: async () => {
+    const response = await fetch(`${BACKEND_URL}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    return response.json();
+  },
+
+  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+  getLoginUrl: () => {
+    const redirectUrl = window.location.origin + '/';
+    return `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  },
+};
+
+export default { goalsApi, milestonesApi, habitsApi, backupApi, authApi };

@@ -1,15 +1,16 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
-from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
+import httpx
 import uuid
-from datetime import datetime, timezone
-from enum import Enum
+from pathlib import Path
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime, timezone, timedelta
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -22,237 +23,195 @@ db = client[os.environ['DB_NAME']]
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
-# Enums
-class GoalCategory(str, Enum):
-    HEALTH = "health"
-    CAREER = "career"
-    FINANCE = "finance"
-    PERSONAL = "personal"
-    EDUCATION = "education"
-    RELATIONSHIPS = "relationships"
+# Auth Models
+class SessionRequest(BaseModel):
+    session_id: str
 
-class GoalType(str, Enum):
-    MILESTONE = "milestone"
-    NUMERIC = "numeric"
-    HABIT = "habit"
+class User(BaseModel):
+    user_id: str
+    email: str
+    name: str
+    picture: Optional[str] = None
 
-# Models
-class Milestone(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    title: str
-    completed: bool = False
-    deadline: Optional[str] = None
+class BackupData(BaseModel):
+    goals: list
+    habits: list
+    backup_date: str
 
-class Goal(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    title: str
-    description: Optional[str] = None
-    category: GoalCategory
-    goal_type: GoalType
-    target_value: Optional[int] = None
-    current_value: int = 0
-    milestones: List[Milestone] = []
-    deadline: Optional[str] = None
-    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    year: int = Field(default_factory=lambda: datetime.now().year)
-
-class GoalCreate(BaseModel):
-    title: str
-    description: Optional[str] = None
-    category: GoalCategory
-    goal_type: GoalType
-    target_value: Optional[int] = None
-    deadline: Optional[str] = None
-    year: Optional[int] = None
-
-class GoalUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    category: Optional[GoalCategory] = None
-    target_value: Optional[int] = None
-    current_value: Optional[int] = None
-    deadline: Optional[str] = None
-
-class MilestoneCreate(BaseModel):
-    title: str
-    deadline: Optional[str] = None
-
-class Habit(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    title: str
-    category: GoalCategory
-    streak: int = 0
-    completions: List[str] = []  # ISO date strings
-    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-
-class HabitCreate(BaseModel):
-    title: str
-    category: GoalCategory
-
-class HabitCompletion(BaseModel):
-    date: str  # ISO date string YYYY-MM-DD
-
-# Goal Routes
-@api_router.get("/goals", response_model=List[Goal])
-async def get_goals(year: Optional[int] = None):
-    query = {}
-    if year:
-        query["year"] = year
-    goals = await db.goals.find(query, {"_id": 0}).to_list(1000)
-    return goals
-
-@api_router.get("/goals/{goal_id}", response_model=Goal)
-async def get_goal(goal_id: str):
-    goal = await db.goals.find_one({"id": goal_id}, {"_id": 0})
-    if not goal:
-        raise HTTPException(status_code=404, detail="Goal not found")
-    return goal
-
-@api_router.post("/goals", response_model=Goal)
-async def create_goal(goal_data: GoalCreate):
-    goal = Goal(
-        title=goal_data.title,
-        description=goal_data.description,
-        category=goal_data.category,
-        goal_type=goal_data.goal_type,
-        target_value=goal_data.target_value,
-        deadline=goal_data.deadline,
-        year=goal_data.year or datetime.now().year
+# Helper: Get user from session token
+async def get_current_user(request: Request) -> Optional[User]:
+    session_token = request.cookies.get("session_token")
+    if not session_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            session_token = auth_header[7:]
+    
+    if not session_token:
+        return None
+    
+    session = await db.user_sessions.find_one(
+        {"session_token": session_token},
+        {"_id": 0}
     )
-    await db.goals.insert_one(goal.model_dump())
-    return goal
-
-@api_router.put("/goals/{goal_id}", response_model=Goal)
-async def update_goal(goal_id: str, goal_update: GoalUpdate):
-    update_data = {k: v for k, v in goal_update.model_dump().items() if v is not None}
-    if not update_data:
-        raise HTTPException(status_code=400, detail="No update data provided")
     
-    result = await db.goals.update_one({"id": goal_id}, {"$set": update_data})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Goal not found")
+    if not session:
+        return None
     
-    goal = await db.goals.find_one({"id": goal_id}, {"_id": 0})
-    return goal
-
-@api_router.delete("/goals/{goal_id}")
-async def delete_goal(goal_id: str):
-    result = await db.goals.delete_one({"id": goal_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Goal not found")
-    return {"message": "Goal deleted"}
-
-# Milestone Routes
-@api_router.post("/goals/{goal_id}/milestones", response_model=Goal)
-async def add_milestone(goal_id: str, milestone_data: MilestoneCreate):
-    milestone = Milestone(title=milestone_data.title, deadline=milestone_data.deadline)
-    result = await db.goals.update_one(
-        {"id": goal_id},
-        {"$push": {"milestones": milestone.model_dump()}}
+    # Check expiry
+    expires_at = session.get("expires_at")
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < datetime.now(timezone.utc):
+        return None
+    
+    user = await db.users.find_one(
+        {"user_id": session["user_id"]},
+        {"_id": 0}
     )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Goal not found")
     
-    goal = await db.goals.find_one({"id": goal_id}, {"_id": 0})
-    return goal
+    if not user:
+        return None
+    
+    return User(**user)
 
-@api_router.put("/goals/{goal_id}/milestones/{milestone_id}/toggle", response_model=Goal)
-async def toggle_milestone(goal_id: str, milestone_id: str):
-    goal = await db.goals.find_one({"id": goal_id}, {"_id": 0})
-    if not goal:
-        raise HTTPException(status_code=404, detail="Goal not found")
+# Auth Routes
+@api_router.post("/auth/session")
+async def create_session(request: SessionRequest, response: Response):
+    """Exchange session_id for session_token"""
+    try:
+        async with httpx.AsyncClient() as client:
+            auth_response = await client.get(
+                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                headers={"X-Session-ID": request.session_id}
+            )
+            
+            if auth_response.status_code != 200:
+                raise HTTPException(status_code=401, detail="Invalid session")
+            
+            auth_data = auth_response.json()
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Auth error: {str(e)}")
     
-    milestones = goal.get("milestones", [])
-    for m in milestones:
-        if m["id"] == milestone_id:
-            m["completed"] = not m["completed"]
-            break
+    email = auth_data["email"]
+    session_token = auth_data["session_token"]
     
-    await db.goals.update_one({"id": goal_id}, {"$set": {"milestones": milestones}})
-    goal = await db.goals.find_one({"id": goal_id}, {"_id": 0})
-    return goal
-
-@api_router.delete("/goals/{goal_id}/milestones/{milestone_id}", response_model=Goal)
-async def delete_milestone(goal_id: str, milestone_id: str):
-    result = await db.goals.update_one(
-        {"id": goal_id},
-        {"$pull": {"milestones": {"id": milestone_id}}}
-    )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Goal not found")
+    # Check if user exists
+    existing_user = await db.users.find_one({"email": email}, {"_id": 0})
     
-    goal = await db.goals.find_one({"id": goal_id}, {"_id": 0})
-    return goal
-
-# Habit Routes
-@api_router.get("/habits", response_model=List[Habit])
-async def get_habits():
-    habits = await db.habits.find({}, {"_id": 0}).to_list(1000)
-    return habits
-
-@api_router.post("/habits", response_model=Habit)
-async def create_habit(habit_data: HabitCreate):
-    habit = Habit(title=habit_data.title, category=habit_data.category)
-    await db.habits.insert_one(habit.model_dump())
-    return habit
-
-@api_router.put("/habits/{habit_id}/complete", response_model=Habit)
-async def complete_habit(habit_id: str, completion: HabitCompletion):
-    habit = await db.habits.find_one({"id": habit_id}, {"_id": 0})
-    if not habit:
-        raise HTTPException(status_code=404, detail="Habit not found")
-    
-    completions = habit.get("completions", [])
-    date_str = completion.date
-    
-    if date_str in completions:
-        completions.remove(date_str)
+    if existing_user:
+        user_id = existing_user["user_id"]
+        # Update user data
+        await db.users.update_one(
+            {"email": email},
+            {"$set": {
+                "name": auth_data["name"],
+                "picture": auth_data.get("picture"),
+            }}
+        )
     else:
-        completions.append(date_str)
+        # Create new user
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        await db.users.insert_one({
+            "user_id": user_id,
+            "email": email,
+            "name": auth_data["name"],
+            "picture": auth_data.get("picture"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
     
-    # Calculate streak
-    completions_sorted = sorted(completions, reverse=True)
-    streak = 0
-    today = datetime.now(timezone.utc).date()
+    # Create session
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    await db.user_sessions.insert_one({
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
     
-    for i, comp_date in enumerate(completions_sorted):
-        comp = datetime.fromisoformat(comp_date).date()
-        expected = today - __import__('datetime').timedelta(days=i)
-        if comp == expected:
-            streak += 1
-        else:
-            break
-    
-    await db.habits.update_one(
-        {"id": habit_id},
-        {"$set": {"completions": completions, "streak": streak}}
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=7 * 24 * 60 * 60
     )
     
-    habit = await db.habits.find_one({"id": habit_id}, {"_id": 0})
-    return habit
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    return User(**user)
 
-@api_router.delete("/habits/{habit_id}")
-async def delete_habit(habit_id: str):
-    result = await db.habits.delete_one({"id": habit_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Habit not found")
-    return {"message": "Habit deleted"}
+@api_router.get("/auth/me")
+async def get_me(request: Request):
+    """Get current user"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return user
 
-# Update goal progress (for numeric goals)
-@api_router.put("/goals/{goal_id}/progress", response_model=Goal)
-async def update_progress(goal_id: str, value: int):
-    result = await db.goals.update_one(
-        {"id": goal_id},
-        {"$set": {"current_value": value}}
-    )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Goal not found")
+@api_router.post("/auth/logout")
+async def logout(request: Request, response: Response):
+    """Logout user"""
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        await db.user_sessions.delete_one({"session_token": session_token})
     
-    goal = await db.goals.find_one({"id": goal_id}, {"_id": 0})
-    return goal
+    response.delete_cookie(
+        key="session_token",
+        path="/",
+        secure=True,
+        samesite="none"
+    )
+    return {"message": "Logged out"}
+
+# Backup Routes
+@api_router.post("/backup/save")
+async def save_backup(backup: BackupData, request: Request):
+    """Save backup to database (for Google Drive sync)"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    backup_doc = {
+        "user_id": user.user_id,
+        "goals": backup.goals,
+        "habits": backup.habits,
+        "backup_date": backup.backup_date,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    
+    # Upsert backup
+    await db.backups.update_one(
+        {"user_id": user.user_id},
+        {"$set": backup_doc},
+        upsert=True
+    )
+    
+    return {"message": "Backup saved", "backup_date": backup.backup_date}
+
+@api_router.get("/backup/load")
+async def load_backup(request: Request):
+    """Load backup from database"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    backup = await db.backups.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    )
+    
+    if not backup:
+        return {"goals": [], "habits": [], "backup_date": None}
+    
+    return {
+        "goals": backup.get("goals", []),
+        "habits": backup.get("habits", []),
+        "backup_date": backup.get("backup_date"),
+    }
 
 @api_router.get("/")
 async def root():
