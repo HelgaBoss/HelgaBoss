@@ -188,23 +188,6 @@ export const habitsApi = {
       }
     }
     
-    // Calculate streak
-    const sortedCompletions = [...habit.completions].sort().reverse();
-    let streak = 0;
-    const today = new Date();
-    
-    for (let i = 0; i < sortedCompletions.length; i++) {
-      const expectedDate = new Date(today);
-      expectedDate.setDate(today.getDate() - i);
-      const expectedStr = expectedDate.toISOString().split('T')[0];
-      
-      if (sortedCompletions[i] === expectedStr) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-    
     habit.streak = streak;
     localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
     return { data: habit };
