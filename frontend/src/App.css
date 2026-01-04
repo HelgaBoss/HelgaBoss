@@ -1,34 +1,74 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* App specific styles */
+.App {
+    min-height: 100vh;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
+/* Bento Grid Layout */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .bento-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
     }
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+@media (min-width: 1024px) {
+    .bento-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
 }
 
-.App-link {
-    color: #61dafb;
+/* Card hover effect */
+.card-hover {
+    transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
-@keyframes App-logo-spin {
+.card-hover:hover {
+    border-color: rgba(190, 242, 100, 0.3);
+}
+
+/* Streak badge pulse */
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(190, 242, 100, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(190, 242, 100, 0.5);
+    }
+}
+
+.streak-pulse {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Check animation */
+@keyframes check-bounce {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.check-bounce {
+    animation: check-bounce 0.3s ease;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
     from {
-        transform: rotate(0deg);
+        opacity: 0;
+        transform: translateY(10px);
     }
     to {
-        transform: rotate(360deg);
+        opacity: 1;
+        transform: translateY(0);
     }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
 }
