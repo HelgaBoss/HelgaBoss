@@ -171,6 +171,25 @@ const GoalDetail = () => {
         </div>
       </motion.header>
 
+      {/* Ausgangslage Section */}
+      {goal.starting_situation && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-card border border-border rounded-xl p-6 mb-6"
+          data-testid="starting-situation-section"
+        >
+          <h2 className="font-bold text-lg mb-2">📍 Ausgangslage</h2>
+          <p className="text-muted-foreground">{goal.starting_situation}</p>
+          {goal.start_value > 0 && goal.goal_type === 'numeric' && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Startwert: <span className="text-foreground font-medium">{goal.start_value}</span>
+            </p>
+          )}
+        </motion.div>
+      )}
+
       {/* Progress Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
