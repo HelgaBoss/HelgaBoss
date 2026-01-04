@@ -32,11 +32,15 @@ const Dashboard = () => {
       window.history.replaceState({}, document.title);
     }
     
-    // Check auth status
+    // Check auth status (silent, no error if not logged in)
     const checkAuth = async () => {
       if (!user) {
-        const currentUser = await authApi.getMe();
-        if (currentUser) setUser(currentUser);
+        try {
+          const currentUser = await authApi.getMe();
+          if (currentUser) setUser(currentUser);
+        } catch (e) {
+          // Not logged in - OK
+        }
       }
     };
     checkAuth();

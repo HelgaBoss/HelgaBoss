@@ -235,11 +235,16 @@ export const backupApi = {
 // Auth API
 export const authApi = {
   getMe: async () => {
-    const response = await fetch(`${BACKEND_URL}/api/auth/me`, {
-      credentials: 'include',
-    });
-    if (!response.ok) return null;
-    return response.json();
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/me`, {
+        credentials: 'include',
+      });
+      if (!response.ok) return null;
+      return response.json();
+    } catch (error) {
+      // Not logged in - this is OK
+      return null;
+    }
   },
 
   createSession: async (sessionId) => {
