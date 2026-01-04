@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Target, Calendar, Flame, TrendingUp, BarChart3, Quote } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { goalsApi, habitsApi } from '@/lib/api';
+import { goalsApi, habitsApi, authApi } from '@/lib/api';
 import { calculateGoalProgress, getRandomQuote } from '@/lib/utils';
 import { toast } from 'sonner';
 import GoalCard from '@/components/GoalCard';
@@ -11,17 +11,36 @@ import HabitTracker from '@/components/HabitTracker';
 import CreateGoalDialog from '@/components/CreateGoalDialog';
 import CreateHabitDialog from '@/components/CreateHabitDialog';
 import ProgressCircle from '@/components/ProgressCircle';
+import BackupMenu from '@/components/BackupMenu';
 
 const Dashboard = () => {
+  const location = useLocation();
   const [goals, setGoals] = useState([]);
   const [habits, setHabits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateGoal, setShowCreateGoal] = useState(false);
   const [showCreateHabit, setShowCreateHabit] = useState(false);
   const [quote] = useState(getRandomQuote());
+  const [user, setUser] = useState(location.state?.user || null);
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
+    // Check if user just logged in
+    if (location.state?.justLoggedIn) {
+      toast.success(`Willkommen, ${location.state.user?.name}!`);
+      // Clear state
+      window.history.replaceState({}, document.title);
+    }
+    
+    // Check auth status
+    const checkAuth = async () => {
+      if (!user) {
+        const currentUser = await authApi.getMe();
+        if (currentUser) setUser(currentUser);
+      }
+    };
+    checkAuth();
+    
     fetchData();
   }, []);
 
@@ -84,6 +103,7 @@ const Dashboard = () => {
             <p className="text-muted-foreground mt-1">Verfolge deine Ziele und Gewohnheiten</p>
           </div>
           <div className="flex gap-2">
+            <BackupMenu user={user} onUserChange={setUser} onDataChange={fetchData} />
             <Link to="/weekly">
               <Button variant="ghost" size="icon" data-testid="weekly-link" title="Wochenrückblick">
                 <BarChart3 className="h-5 w-5" />
