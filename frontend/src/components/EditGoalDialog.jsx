@@ -5,11 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { goalsApi } from '@/lib/api';
-import { CATEGORIES, cn, formatDate } from '@/lib/utils';
+import { CATEGORIES } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const EditGoalDialog = ({ open, onOpenChange, goal, onSuccess }) => {
@@ -19,7 +17,7 @@ const EditGoalDialog = ({ open, onOpenChange, goal, onSuccess }) => {
     description: '',
     category: '',
     target_value: '',
-    deadline: null,
+    deadline: '',
   });
 
   useEffect(() => {
@@ -29,7 +27,7 @@ const EditGoalDialog = ({ open, onOpenChange, goal, onSuccess }) => {
         description: goal.description || '',
         category: goal.category || '',
         target_value: goal.target_value?.toString() || '',
-        deadline: goal.deadline ? new Date(goal.deadline) : null,
+        deadline: goal.deadline ? goal.deadline.split('T')[0] : '',
       });
     }
   }, [goal]);
@@ -48,7 +46,7 @@ const EditGoalDialog = ({ open, onOpenChange, goal, onSuccess }) => {
         description: formData.description || null,
         category: formData.category,
         target_value: formData.target_value ? parseInt(formData.target_value) : null,
-        deadline: formData.deadline ? formData.deadline.toISOString() : null,
+        deadline: formData.deadline || null,
       });
       toast.success('Ziel aktualisiert!');
       onOpenChange(false);
@@ -132,30 +130,18 @@ const EditGoalDialog = ({ open, onOpenChange, goal, onSuccess }) => {
           )}
 
           <div className="space-y-2">
-            <Label>Deadline</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full h-12 justify-start text-left font-normal',
-                    !formData.deadline && 'text-muted-foreground'
-                  )}
-                  data-testid="edit-goal-deadline-trigger"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.deadline ? formatDate(formData.deadline.toISOString()) : 'Datum wählen'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={formData.deadline}
-                  onSelect={(date) => setFormData({ ...formData, deadline: date })}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <Label htmlFor="edit-deadline">Deadline</Label>
+            <div className="relative">
+              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                id="edit-deadline"
+                type="date"
+                value={formData.deadline}
+                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                className="h-12 pl-10"
+                data-testid="edit-goal-deadline-input"
+              />
+            </div>
           </div>
 
           <DialogFooter>
