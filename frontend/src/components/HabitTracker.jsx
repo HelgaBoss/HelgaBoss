@@ -1,26 +1,29 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Flame, Trash2, MessageSquare, X } from 'lucide-react';
+import { Check, Flame, Trash2, MessageSquare, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { habitsApi } from '@/lib/api';
 import { CATEGORIES, getTodayISO } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const HabitTracker = ({ habits, onUpdate }) => {
   const [completing, setCompleting] = useState(null);
-  const [editingNote, setEditingNote] = useState(null); // habit id
+  const [editingNote, setEditingNote] = useState(null);
   const [noteText, setNoteText] = useState('');
+  const [selectedOption, setSelectedOption] = useState('');
   const today = getTodayISO();
 
   const handleComplete = async (habitId) => {
     const habit = habits.find(h => h.id === habitId);
     const isCompleted = habit?.completions?.includes(today);
     
-    // If completing (not uncompleting), show note input
+    // If completing (not uncompleting), show input
     if (!isCompleted) {
       setEditingNote(habitId);
       setNoteText(habit?.notes?.[today] || '');
+      setSelectedOption(habit?.selectedOptions?.[today] || '');
       return;
     }
     
@@ -37,11 +40,20 @@ const HabitTracker = ({ habits, onUpdate }) => {
   };
 
   const handleSaveWithNote = async (habitId) => {
+    const habit = habits.find(h => h.id === habitId);
+    
+    // If habit has options and none selected, show error
+    if (habit?.options?.length > 0 && !selectedOption) {
+      toast.error('Bitte wähle eine Option aus');
+      return;
+    }
+    
     setCompleting(habitId);
     try {
-      await habitsApi.complete(habitId, today, noteText.trim() || null);
+      await habitsApi.complete(habitId, today, noteText.trim() || null, selectedOption || null);
       setEditingNote(null);
       setNoteText('');
+      setSelectedOption('');
       onUpdate();
       toast.success('Erledigt! 🎉');
     } catch (error) {
@@ -53,11 +65,12 @@ const HabitTracker = ({ habits, onUpdate }) => {
 
   const handleUpdateNote = async (habitId) => {
     try {
-      await habitsApi.updateNote(habitId, today, noteText.trim());
+      await habitsApi.updateNote(habitId, today, noteText.trim(), selectedOption || null);
       setEditingNote(null);
       setNoteText('');
+      setSelectedOption('');
       onUpdate();
-      toast.success('Notiz gespeichert');
+      toast.success('Gespeichert');
     } catch (error) {
       toast.error('Fehler beim Speichern');
     }
@@ -80,6 +93,7 @@ const HabitTracker = ({ habits, onUpdate }) => {
     e.stopPropagation();
     setEditingNote(habit.id);
     setNoteText(habit.notes?.[today] || '');
+    setSelectedOption(habit.selectedOptions?.[today] || '');
   };
 
   if (habits.length === 0) {
@@ -102,7 +116,9 @@ const HabitTracker = ({ habits, onUpdate }) => {
           const category = CATEGORIES[habit.category];
           const isCompletedToday = habit.completions?.includes(today);
           const todayNote = habit.notes?.[today];
+          const todayOption = habit.selectedOptions?.[today];
           const isEditing = editingNote === habit.id;
+          const hasOptions = habit.options && habit.options.length > 0;
 
           return (
             <motion.div
@@ -160,12 +176,12 @@ const HabitTracker = ({ habits, onUpdate }) => {
                   </div>
                 </div>
 
-                {/* Note indicator */}
+                {/* Note/Option indicator */}
                 {isCompletedToday && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={`h-6 w-6 ${todayNote ? 'text-primary' : 'text-muted-foreground opacity-0 group-hover:opacity-100'}`}
+                    className={`h-6 w-6 ${(todayNote || todayOption) ? 'text-primary' : 'text-muted-foreground opacity-0 group-hover:opacity-100'}`}
                     onClick={(e) => openNoteEditor(habit, e)}
                     data-testid={`habit-note-btn-${habit.id}`}
                   >
@@ -198,45 +214,72 @@ const HabitTracker = ({ habits, onUpdate }) => {
                 </Button>
               </div>
 
-              {/* Note display */}
-              {isCompletedToday && todayNote && !isEditing && (
+              {/* Display selected option and/or note */}
+              {isCompletedToday && (todayOption || todayNote) && !isEditing && (
                 <div 
-                  className="px-3 pb-3 pt-0"
+                  className="px-3 pb-3 pt-0 flex flex-wrap gap-2"
                   onClick={(e) => openNoteEditor(habit, e)}
                 >
-                  <p className="text-xs text-muted-foreground bg-secondary/50 rounded p-2 cursor-pointer hover:bg-secondary/70">
-                    📝 {todayNote}
-                  </p>
+                  {todayOption && (
+                    <span className="text-xs bg-accent/20 text-accent px-2 py-1 rounded-full cursor-pointer hover:bg-accent/30">
+                      {todayOption}
+                    </span>
+                  )}
+                  {todayNote && (
+                    <p className="text-xs text-muted-foreground bg-secondary/50 rounded px-2 py-1 cursor-pointer hover:bg-secondary/70 flex-1">
+                      📝 {todayNote}
+                    </p>
+                  )}
                 </div>
               )}
 
-              {/* Note editor */}
+              {/* Editor */}
               {isEditing && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="px-3 pb-3"
+                  className="px-3 pb-3 space-y-2"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {/* Dropdown for options */}
+                  {hasOptions && (
+                    <Select
+                      value={selectedOption}
+                      onValueChange={setSelectedOption}
+                    >
+                      <SelectTrigger className="h-10" data-testid={`habit-option-select-${habit.id}`}>
+                        <SelectValue placeholder="Option wählen..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {habit.options.map((option, idx) => (
+                          <SelectItem key={idx} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {/* Note input */}
                   <Textarea
                     placeholder="Notiz hinzufügen... (optional)"
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
-                    className="min-h-[60px] text-sm mb-2"
-                    autoFocus
+                    className="min-h-[60px] text-sm"
+                    autoFocus={!hasOptions}
                     data-testid={`habit-note-input-${habit.id}`}
                   />
+                  
                   <div className="flex gap-2">
                     {isCompletedToday ? (
-                      // Already completed - just update note
                       <>
                         <Button
                           size="sm"
                           onClick={() => handleUpdateNote(habit.id)}
                           className="flex-1"
                         >
-                          Notiz speichern
+                          Speichern
                         </Button>
                         <Button
                           size="sm"
@@ -244,13 +287,13 @@ const HabitTracker = ({ habits, onUpdate }) => {
                           onClick={() => {
                             setEditingNote(null);
                             setNoteText('');
+                            setSelectedOption('');
                           }}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </>
                     ) : (
-                      // Not completed - complete with optional note
                       <>
                         <Button
                           size="sm"
@@ -267,6 +310,7 @@ const HabitTracker = ({ habits, onUpdate }) => {
                           onClick={() => {
                             setEditingNote(null);
                             setNoteText('');
+                            setSelectedOption('');
                           }}
                         >
                           <X className="h-4 w-4" />
