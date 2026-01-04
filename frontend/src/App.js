@@ -5,6 +5,7 @@ import Dashboard from "@/pages/Dashboard";
 import GoalDetail from "@/pages/GoalDetail";
 import CalendarView from "@/pages/CalendarView";
 import WeeklyReview from "@/pages/WeeklyReview";
+import Widget from "@/pages/Widget";
 import AuthCallback from "@/components/AuthCallback";
 
 // Router component that checks for auth callback
@@ -22,6 +23,7 @@ function AppRouter() {
       <Route path="/goal/:id" element={<GoalDetail />} />
       <Route path="/calendar" element={<CalendarView />} />
       <Route path="/weekly" element={<WeeklyReview />} />
+      <Route path="/widget" element={<Widget />} />
     </Routes>
   );
 }
