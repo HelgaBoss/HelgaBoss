@@ -5,8 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { goalsApi } from '@/lib/api';
 import { CATEGORIES, GOAL_TYPES, cn, formatDate } from '@/lib/utils';
@@ -188,30 +186,18 @@ const CreateGoalDialog = ({ open, onOpenChange, onSuccess }) => {
           </div>
 
           <div className="space-y-2">
-            <Label>Deadline</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full h-12 justify-start text-left font-normal',
-                    !formData.deadline && 'text-muted-foreground'
-                  )}
-                  data-testid="goal-deadline-trigger"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.deadline ? formatDate(formData.deadline.toISOString()) : 'Datum wählen'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={formData.deadline}
-                  onSelect={(date) => setFormData({ ...formData, deadline: date })}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <Label htmlFor="deadline">Deadline</Label>
+            <div className="relative">
+              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                id="deadline"
+                type="date"
+                value={formData.deadline || ''}
+                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                className="h-12 pl-10"
+                data-testid="goal-deadline-input"
+              />
+            </div>
           </div>
 
           <DialogFooter>
