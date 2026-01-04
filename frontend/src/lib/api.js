@@ -193,18 +193,23 @@ export const habitsApi = {
   },
 
   // Update note for a specific date
-  updateNote: async (id, date, note) => {
+  updateNote: async (id, date, note, selectedOption = null) => {
     const habits = JSON.parse(localStorage.getItem(STORAGE_KEYS.HABITS) || '[]');
     const index = habits.findIndex(h => h.id === id);
     if (index === -1) throw new Error('Habit not found');
     
     const habit = habits[index];
     habit.notes = habit.notes || {};
+    habit.selectedOptions = habit.selectedOptions || {};
     
     if (note && note.trim()) {
       habit.notes[date] = note.trim();
     } else {
       delete habit.notes[date];
+    }
+    
+    if (selectedOption) {
+      habit.selectedOptions[date] = selectedOption;
     }
     
     localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
