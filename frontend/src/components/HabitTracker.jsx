@@ -1,16 +1,30 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Flame, Trash2 } from 'lucide-react';
+import { Check, Flame, Trash2, MessageSquare, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { habitsApi } from '@/lib/api';
 import { CATEGORIES, getTodayISO } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const HabitTracker = ({ habits, onUpdate }) => {
   const [completing, setCompleting] = useState(null);
+  const [editingNote, setEditingNote] = useState(null); // habit id
+  const [noteText, setNoteText] = useState('');
   const today = getTodayISO();
 
   const handleComplete = async (habitId) => {
+    const habit = habits.find(h => h.id === habitId);
+    const isCompleted = habit?.completions?.includes(today);
+    
+    // If completing (not uncompleting), show note input
+    if (!isCompleted) {
+      setEditingNote(habitId);
+      setNoteText(habit?.notes?.[today] || '');
+      return;
+    }
+    
+    // If uncompleting, just toggle
     setCompleting(habitId);
     try {
       await habitsApi.complete(habitId, today);
@@ -19,6 +33,33 @@ const HabitTracker = ({ habits, onUpdate }) => {
       toast.error('Fehler beim Aktualisieren');
     } finally {
       setCompleting(null);
+    }
+  };
+
+  const handleSaveWithNote = async (habitId) => {
+    setCompleting(habitId);
+    try {
+      await habitsApi.complete(habitId, today, noteText.trim() || null);
+      setEditingNote(null);
+      setNoteText('');
+      onUpdate();
+      toast.success('Erledigt! 🎉');
+    } catch (error) {
+      toast.error('Fehler beim Speichern');
+    } finally {
+      setCompleting(null);
+    }
+  };
+
+  const handleUpdateNote = async (habitId) => {
+    try {
+      await habitsApi.updateNote(habitId, today, noteText.trim());
+      setEditingNote(null);
+      setNoteText('');
+      onUpdate();
+      toast.success('Notiz gespeichert');
+    } catch (error) {
+      toast.error('Fehler beim Speichern');
     }
   };
 
@@ -33,6 +74,12 @@ const HabitTracker = ({ habits, onUpdate }) => {
     } catch (error) {
       toast.error('Fehler beim Löschen');
     }
+  };
+
+  const openNoteEditor = (habit, e) => {
+    e.stopPropagation();
+    setEditingNote(habit.id);
+    setNoteText(habit.notes?.[today] || '');
   };
 
   if (habits.length === 0) {
@@ -54,6 +101,8 @@ const HabitTracker = ({ habits, onUpdate }) => {
         {habits.map((habit, index) => {
           const category = CATEGORIES[habit.category];
           const isCompletedToday = habit.completions?.includes(today);
+          const todayNote = habit.notes?.[today];
+          const isEditing = editingNote === habit.id;
 
           return (
             <motion.div
@@ -62,18 +111,21 @@ const HabitTracker = ({ habits, onUpdate }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ delay: index * 0.05 }}
-              className={`group relative p-3 rounded-lg border transition-all cursor-pointer ${
+              className={`group relative rounded-lg border transition-all ${
                 isCompletedToday
                   ? 'bg-primary/10 border-primary/30'
                   : 'bg-secondary/30 border-border hover:border-primary/20'
               }`}
-              onClick={() => handleComplete(habit.id)}
               data-testid={`habit-item-${habit.id}`}
             >
-              <div className="flex items-center gap-3">
+              {/* Main habit row */}
+              <div
+                className="p-3 cursor-pointer flex items-center gap-3"
+                onClick={() => handleComplete(habit.id)}
+              >
                 {/* Check button */}
                 <div
-                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
                     isCompletedToday
                       ? 'bg-primary border-primary'
                       : 'border-muted-foreground group-hover:border-primary'
@@ -108,6 +160,19 @@ const HabitTracker = ({ habits, onUpdate }) => {
                   </div>
                 </div>
 
+                {/* Note indicator */}
+                {isCompletedToday && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`h-6 w-6 ${todayNote ? 'text-primary' : 'text-muted-foreground opacity-0 group-hover:opacity-100'}`}
+                    onClick={(e) => openNoteEditor(habit, e)}
+                    data-testid={`habit-note-btn-${habit.id}`}
+                  >
+                    <MessageSquare className="h-3 w-3" />
+                  </Button>
+                )}
+
                 {/* Streak */}
                 {habit.streak > 0 && (
                   <div
@@ -132,6 +197,85 @@ const HabitTracker = ({ habits, onUpdate }) => {
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
+
+              {/* Note display */}
+              {isCompletedToday && todayNote && !isEditing && (
+                <div 
+                  className="px-3 pb-3 pt-0"
+                  onClick={(e) => openNoteEditor(habit, e)}
+                >
+                  <p className="text-xs text-muted-foreground bg-secondary/50 rounded p-2 cursor-pointer hover:bg-secondary/70">
+                    📝 {todayNote}
+                  </p>
+                </div>
+              )}
+
+              {/* Note editor */}
+              {isEditing && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="px-3 pb-3"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Textarea
+                    placeholder="Notiz hinzufügen... (optional)"
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    className="min-h-[60px] text-sm mb-2"
+                    autoFocus
+                    data-testid={`habit-note-input-${habit.id}`}
+                  />
+                  <div className="flex gap-2">
+                    {isCompletedToday ? (
+                      // Already completed - just update note
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => handleUpdateNote(habit.id)}
+                          className="flex-1"
+                        >
+                          Notiz speichern
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingNote(null);
+                            setNoteText('');
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      // Not completed - complete with optional note
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveWithNote(habit.id)}
+                          className="flex-1 bg-primary text-primary-foreground"
+                          disabled={completing === habit.id}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Erledigt
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingNote(null);
+                            setNoteText('');
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           );
         })}
