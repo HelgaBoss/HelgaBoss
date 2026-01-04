@@ -130,9 +130,11 @@ export const habitsApi = {
       id: generateId(),
       title: data.title,
       category: data.category,
+      options: data.options || [], // Benutzerdefinierte Dropdown-Optionen
       streak: 0,
       completions: [],
       notes: {}, // { "2026-01-04": "Notiz für diesen Tag" }
+      selectedOptions: {}, // { "2026-01-04": "Joggen" }
       created_at: new Date().toISOString(),
     };
     habits.push(newHabit);
@@ -140,7 +142,7 @@ export const habitsApi = {
     return { data: newHabit };
   },
 
-  complete: async (id, date, note = null) => {
+  complete: async (id, date, note = null, selectedOption = null) => {
     const habits = JSON.parse(localStorage.getItem(STORAGE_KEYS.HABITS) || '[]');
     const index = habits.findIndex(h => h.id === id);
     if (index === -1) throw new Error('Habit not found');
@@ -151,16 +153,20 @@ export const habitsApi = {
     // Toggle completion
     if (habit.completions.includes(dateStr)) {
       habit.completions = habit.completions.filter(d => d !== dateStr);
-      // Remove note when uncompleting
-      if (habit.notes) {
-        delete habit.notes[dateStr];
-      }
+      // Remove note and option when uncompleting
+      if (habit.notes) delete habit.notes[dateStr];
+      if (habit.selectedOptions) delete habit.selectedOptions[dateStr];
     } else {
       habit.completions.push(dateStr);
       // Add note if provided
       if (note !== null) {
         habit.notes = habit.notes || {};
         habit.notes[dateStr] = note;
+      }
+      // Add selected option if provided
+      if (selectedOption !== null) {
+        habit.selectedOptions = habit.selectedOptions || {};
+        habit.selectedOptions[dateStr] = selectedOption;
       }
     }
     
