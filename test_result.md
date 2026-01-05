@@ -74,15 +74,13 @@ Goal tracking app with habits, milestones, and daily tracking. Latest changes in
   run_ui: true
 
 ## test_plan:
-  current_focus:
-    - "Streak renamed to Serie"
-    - "Calendar navigation"
-    - "Date navigation on Dashboard"
-    - "Edit habits for past dates"
+  current_focus: []
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
 
 ## agent_communication:
     - agent: "main"
     - message: "Implemented all three requested features: 1) Renamed Streak to Serie globally, 2) Added month/year navigation to CalendarView, 3) Dashboard already supports date navigation for habit editing on past dates. Please test all navigation and editing flows."
+    - agent: "testing"
+    - message: "✅ TESTING COMPLETE: All requested features have been thoroughly tested and are working correctly. 1) 'Streak' to 'Serie' renaming is complete across all pages (Dashboard, Widget, Weekly Review). 2) Calendar navigation with month/year arrows and 'Heute' button is fully functional. 3) Dashboard date navigation works perfectly with proper 'Heute' button behavior. 4) Habit creation and interaction on past dates is working as expected. 5) Week and Month view navigation is operational. All major functionality is working without issues. Ready for production use."
