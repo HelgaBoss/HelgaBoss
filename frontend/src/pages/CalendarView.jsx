@@ -35,6 +35,25 @@ const CalendarView = () => {
     }
   };
 
+  // Navigation functions
+  const navigateMonth = (direction) => {
+    const newDate = new Date(displayMonth);
+    newDate.setMonth(newDate.getMonth() + direction);
+    setDisplayMonth(newDate);
+  };
+
+  const navigateYear = (direction) => {
+    const newDate = new Date(displayMonth);
+    newDate.setFullYear(newDate.getFullYear() + direction);
+    setDisplayMonth(newDate);
+  };
+
+  const goToToday = () => {
+    const today = new Date();
+    setDisplayMonth(today);
+    setSelectedDate(today);
+  };
+
   // Get deadlines for calendar highlighting
   const deadlineDates = goals
     .filter(g => g.deadline)
