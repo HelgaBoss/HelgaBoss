@@ -38,6 +38,7 @@ export const goalsApi = {
       start_value: data.start_value || 0,
       starting_situation: data.starting_situation || null,
       milestones: [],
+      daily_entries: {}, // { "2026-01-04": { value: 5, note: "..." } }
       created_at: new Date().toISOString(),
       year: data.year || new Date().getFullYear(),
     };
@@ -69,6 +70,48 @@ export const goalsApi = {
     goals[index].current_value = value;
     localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
     return { data: goals[index] };
+  },
+
+  // Add daily entry for numeric goals
+  addDailyEntry: async (id, date, value, note = null) => {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEYS.GOALS) || '[]');
+    const index = goals.findIndex(g => g.id === id);
+    if (index === -1) throw new Error('Goal not found');
+    
+    const goal = goals[index];
+    goal.daily_entries = goal.daily_entries || {};
+    
+    if (value > 0 || note) {
+      goal.daily_entries[date] = { value: value || 0, note: note || '' };
+    } else {
+      delete goal.daily_entries[date];
+    }
+    
+    // Recalculate current_value from all daily entries + start_value
+    const totalFromEntries = Object.values(goal.daily_entries).reduce((sum, entry) => sum + (entry.value || 0), 0);
+    goal.current_value = (goal.start_value || 0) + totalFromEntries;
+    
+    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+    return { data: goal };
+  },
+
+  // Remove daily entry
+  removeDailyEntry: async (id, date) => {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEYS.GOALS) || '[]');
+    const index = goals.findIndex(g => g.id === id);
+    if (index === -1) throw new Error('Goal not found');
+    
+    const goal = goals[index];
+    if (goal.daily_entries) {
+      delete goal.daily_entries[date];
+    }
+    
+    // Recalculate current_value
+    const totalFromEntries = Object.values(goal.daily_entries || {}).reduce((sum, entry) => sum + (entry.value || 0), 0);
+    goal.current_value = (goal.start_value || 0) + totalFromEntries;
+    
+    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+    return { data: goal };
   },
 };
 
