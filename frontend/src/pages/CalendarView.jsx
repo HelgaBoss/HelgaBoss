@@ -118,10 +118,73 @@ const CalendarView = () => {
           className="bg-card border border-border rounded-xl p-6"
           data-testid="calendar-card"
         >
+          {/* Navigation Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigateYear(-1)}
+                className="h-8 w-8"
+                title="Vorheriges Jahr"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 -ml-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigateMonth(-1)}
+                className="h-8 w-8"
+                title="Vorheriger Monat"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="text-center">
+              <h3 className="font-bold text-lg">
+                {displayMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}
+              </h3>
+              <Button
+                variant="link"
+                size="sm"
+                onClick={goToToday}
+                className="text-xs text-primary p-0 h-auto"
+              >
+                Heute
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigateMonth(1)}
+                className="h-8 w-8"
+                title="Nächster Monat"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigateYear(1)}
+                className="h-8 w-8"
+                title="Nächstes Jahr"
+              >
+                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 -ml-3" />
+              </Button>
+            </div>
+          </div>
+          
           <Calendar
             mode="single"
             selected={selectedDate}
             onSelect={(date) => date && setSelectedDate(date)}
+            month={displayMonth}
+            onMonthChange={setDisplayMonth}
             className="rounded-md"
             modifiers={{
               deadline: deadlineDates,
