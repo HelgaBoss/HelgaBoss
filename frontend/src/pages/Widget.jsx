@@ -47,7 +47,7 @@ const Widget = () => {
     : 0;
 
   const completedToday = habits.filter(h => h.completions?.includes(today)).length;
-  const totalStreak = habits.reduce((max, h) => Math.max(max, h.streak || 0), 0);
+  const totalSerie = habits.reduce((max, h) => Math.max(max, h.streak || 0), 0);
 
   if (loading) {
     return (
@@ -97,8 +97,8 @@ const Widget = () => {
           className="bg-card border border-border rounded-xl p-3 text-center"
         >
           <Flame className="h-4 w-4 mx-auto mb-1 text-accent" />
-          <span className="text-2xl font-black">{totalStreak}</span>
-          <p className="text-[10px] text-muted-foreground">Streak</p>
+          <span className="text-2xl font-black">{totalSerie}</span>
+          <p className="text-[10px] text-muted-foreground">Serie</p>
         </motion.div>
       </div>
 

@@ -173,7 +173,7 @@ export const DayView = ({ habits, onUpdate, selectedDate }) => {
                   </Button>
                 )}
 
-                {/* Streak */}
+                {/* Serie */}
                 {habit.streak > 0 && (
                   <div className="flex items-center gap-1 text-sm font-bold text-accent">
                     <Flame className="h-4 w-4" />
@@ -529,7 +529,7 @@ export const YearView = ({ habits, currentDate }) => {
             <p className="text-2xl font-black text-accent">
               {Math.max(...habits.map(h => h.streak || 0), 0)}
             </p>
-            <p className="text-xs text-muted-foreground">Längster Streak</p>
+            <p className="text-xs text-muted-foreground">Längste Serie</p>
           </div>
           <div>
             <p className="text-2xl font-black">

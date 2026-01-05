@@ -85,7 +85,7 @@ const Dashboard = () => {
     : 0;
 
   const todayCompleted = habits.filter(h => h.completions?.includes(getTodayISO())).length;
-  const bestStreak = Math.max(...habits.map(h => h.streak || 0), 0);
+  const bestSerie = Math.max(...habits.map(h => h.streak || 0), 0);
 
   // Date navigation
   const navigateDate = (direction) => {
@@ -226,8 +226,8 @@ const Dashboard = () => {
         </div>
         <div className="bg-card border border-border rounded-xl p-4 text-center">
           <Flame className="h-5 w-5 mx-auto mb-1 text-accent" />
-          <span className="text-2xl font-black">{bestStreak}</span>
-          <p className="text-xs text-muted-foreground">Streak</p>
+          <span className="text-2xl font-black">{bestSerie}</span>
+          <p className="text-xs text-muted-foreground">Serie</p>
         </div>
       </motion.div>
 

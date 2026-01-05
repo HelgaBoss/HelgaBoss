@@ -91,7 +91,7 @@ const WeeklyReview = () => {
     return acc;
   }, 0);
 
-  const bestStreak = habits.reduce((max, h) => Math.max(max, h.streak || 0), 0);
+  const bestSerie = habits.reduce((max, h) => Math.max(max, h.streak || 0), 0);
 
   if (loading) {
     return (
