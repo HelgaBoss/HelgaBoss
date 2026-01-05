@@ -13,6 +13,7 @@ const CalendarView = () => {
   const [goals, setGoals] = useState([]);
   const [habits, setHabits] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [displayMonth, setDisplayMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
