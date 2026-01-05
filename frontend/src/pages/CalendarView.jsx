@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Target, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Target, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { goalsApi, habitsApi } from '@/lib/api';
-import { CATEGORIES, formatDate } from '@/lib/utils';
+import { CATEGORIES, formatDate, getTodayISO } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const CalendarView = () => {
