@@ -190,9 +190,9 @@ const WeeklyReview = () => {
         >
           <div className="flex items-center gap-2 text-accent mb-2">
             <Flame className="h-5 w-5" />
-            <span className="text-xs font-medium text-muted-foreground">Bester Streak</span>
+            <span className="text-xs font-medium text-muted-foreground">Beste Serie</span>
           </div>
-          <span className="text-3xl font-black">{bestStreak} Tage</span>
+          <span className="text-3xl font-black">{bestSerie} Tage</span>
         </motion.div>
       </div>
 

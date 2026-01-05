@@ -189,13 +189,13 @@ const HabitTracker = ({ habits, onUpdate }) => {
                   </Button>
                 )}
 
-                {/* Streak */}
+                {/* Serie */}
                 {habit.streak > 0 && (
                   <div
                     className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${
                       habit.streak >= 7 ? 'bg-orange-500/20 text-orange-400 streak-pulse' : 'bg-secondary text-muted-foreground'
                     }`}
-                    data-testid={`habit-streak-${habit.id}`}
+                    data-testid={`habit-serie-${habit.id}`}
                   >
                     <Flame className="h-3 w-3" />
                     {habit.streak}
