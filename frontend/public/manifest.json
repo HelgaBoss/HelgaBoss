@@ -1,7 +1,7 @@
 {
-  "short_name": "Jahresziele",
-  "name": "Jahresziele & Gewohnheiten Tracker",
-  "description": "Tracke deine Jahresziele, Meilensteine und täglichen Gewohnheiten",
+  "short_name": "Montforthaus",
+  "name": "Montforthaus Feldkirch",
+  "description": "Kongress- und Kulturzentrum im Herzen der Vorarlberger Montfortstadt.",
   "icons": [
     {
       "src": "icon-192.svg",
@@ -18,10 +18,10 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#fe4939",
-  "background_color": "#0a0a0a",
+  "theme_color": "#faf6ef",
+  "background_color": "#161311",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "de",
-  "categories": ["productivity", "lifestyle"]
+  "categories": ["events", "culture", "business"]
 }

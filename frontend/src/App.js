@@ -1,39 +1,16 @@
 import "@/App.css";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
-import Dashboard from "@/pages/Dashboard";
-import GoalDetail from "@/pages/GoalDetail";
-import CalendarView from "@/pages/CalendarView";
-import WeeklyReview from "@/pages/WeeklyReview";
-import Widget from "@/pages/Widget";
-import AuthCallback from "@/components/AuthCallback";
-
-// Router component that checks for auth callback
-function AppRouter() {
-  const location = useLocation();
-  
-  // Check for session_id in URL fragment (auth callback)
-  if (location.hash?.includes('session_id=')) {
-    return <AuthCallback />;
-  }
-  
-  return (
-    <Routes>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/goal/:id" element={<GoalDetail />} />
-      <Route path="/calendar" element={<CalendarView />} />
-      <Route path="/weekly" element={<WeeklyReview />} />
-      <Route path="/widget" element={<Widget />} />
-    </Routes>
-  );
-}
+import Home from "@/pages/Home";
 
 function App() {
   return (
     <div className="App min-h-screen bg-background">
-      <Toaster position="top-right" theme="dark" />
+      <Toaster position="top-right" theme="light" richColors />
       <BrowserRouter>
-        <AppRouter />
+        <Routes>
+          <Route path="/" element={<Home />} />
+        </Routes>
       </BrowserRouter>
     </div>
   );
